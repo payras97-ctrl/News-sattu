@@ -50,8 +50,7 @@ async function startServer() {
       try {
         feed = await rssParser.parseURL(url);
       } catch (e: any) {
-        // Fallback to rss2json API on 503 or any parser error due to Google blocking our IP
-        console.log("Parser failed:", e.message, "Falling back to rss2json...");
+        // Silently fallback to rss2json API on 503 or any parser error
         const rss2jsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`;
         const res = await fetch(rss2jsonUrl);
         const data = await res.json();
@@ -72,7 +71,7 @@ async function startServer() {
         }
       }
       
-      let articles = feed.items.map(item => {
+      let articlesRaw = feed.items.map((item: any) => {
         let titleParts = item.title ? item.title.split(' - ') : [];
         let sourceName = item.source || (titleParts.length > 1 ? titleParts.pop()?.trim() : "News") || "News";
         let cleanTitle = titleParts.join(' - ').trim() || item.title || '';
@@ -88,10 +87,36 @@ async function startServer() {
 
       // Pagination hack (we fetch all and slice)
       // Google News returns about 30-70 items.
-      const page = parseInt(req.query.page as string) || 1;
+      const pageNum = parseInt(req.query.page as string) || 1;
       const pageSize = 15;
-      const totalResults = articles.length;
-      articles = articles.slice((page - 1) * pageSize, page * pageSize);
+      const totalResults = articlesRaw.length;
+      let articles = articlesRaw.slice((pageNum - 1) * pageSize, pageNum * pageSize);
+
+      let lastDecoderError = '';
+      // Decode URLs for current page
+      articles = await Promise.all(articles.map(async (article: any) => {
+        let linkUrl = article.url;
+        if (linkUrl.includes('news.google.com')) {
+           try {
+             // We do a fast decode. If it fails, that's fine.
+             const decodePromise = googleDecoder.decode(linkUrl);
+             const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500));
+             const decodedObj: any = await Promise.race([decodePromise, timeoutPromise]);
+             
+             if (decodedObj && decodedObj.status && decodedObj.decoded_url) {
+               linkUrl = decodedObj.decoded_url;
+             }
+           } catch(e: any) {
+             // Ignore timeout or decode error
+           }
+        }
+        
+        return {
+          ...article,
+          url: linkUrl,
+          image: ''
+        };
+      }));
 
       const data = {
         status: 'ok',

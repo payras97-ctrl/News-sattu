@@ -229,6 +229,50 @@ export default function App() {
     setIsLangMenuOpen(false);
   };
 
+  const CATEGORY_IMAGES = {
+    'General': [
+      'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80',
+      'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80',
+      'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=800&q=80',
+    ],
+    'Technology': [
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&q=80',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80',
+      'https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=800&q=80',
+    ],
+    'Business': [
+      'https://images.unsplash.com/photo-1444653614773-995cb1ef9efa?w=800&q=80',
+      'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800&q=80',
+      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80',
+    ],
+    'Sports': [
+      'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&q=80',
+      'https://images.unsplash.com/photo-1508344928928-7165b67de128?w=800&q=80',
+      'https://images.unsplash.com/photo-1471295253337-3ceaaed958b4?w=800&q=80',
+    ],
+    'Entertainment': [
+      'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=800&q=80',
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=80',
+      'https://images.unsplash.com/photo-1493225457124-a1a2a44b415b?w=800&q=80',
+    ],
+    'Health': [
+      'https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=800&q=80',
+      'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=800&q=80',
+      'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80',
+    ],
+    'Science': [
+      'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=800&q=80',
+      'https://images.unsplash.com/photo-1507413245164-6160d8298b31?w=800&q=80',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80',
+    ]
+  };
+
+  const getFallbackImage = (title: string, cat: string) => {
+    // Generate contextual image using AI based on the article title for perfectly relevant imagery
+    const prompt = `News photo about ${title}`;
+    return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=450&nologo=true`;
+  };
+
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = { 
       year: 'numeric', month: 'short', day: 'numeric',
@@ -489,27 +533,24 @@ export default function App() {
                 className="group flex flex-col bg-white dark:bg-slate-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl dark:shadow-none dark:hover:bg-slate-800/80 border border-gray-100 dark:border-slate-700/50 transition-all duration-300"
               >
                 {/* Image */}
-                <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-slate-700">
+                <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-slate-700 rounded-t-2xl">
                   <img 
-                    src={article.image || article.urlToImage || `/api/image?url=${encodeURIComponent(article.url)}`} 
+                    src={article.image || article.urlToImage || getFallbackImage(article.title, category)} 
                     alt={article.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80';
-                    }}
                   />
-                  <div className="absolute top-4 left-4">
-                    <span className="backdrop-blur-md bg-black/40 text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                      {article.source.name}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Content */}
                 <div className="p-6 flex flex-col flex-grow">
-                  <div className="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-3 tracking-wider uppercase">
-                    {formatDate(article.publishedAt)}
+                  <div className="flex items-center justify-between mb-3 text-xs">
+                    <span className="text-blue-600 dark:text-blue-400 font-bold tracking-wider uppercase line-clamp-1 mr-2 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                      {article.source.name || "News"}
+                    </span>
+                    <span className="text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+                      {formatDate(article.publishedAt)}
+                    </span>
                   </div>
                   
                   <h3 className="text-lg font-bold leading-tight mb-3 line-clamp-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors flex-grow">
@@ -593,13 +634,10 @@ export default function App() {
                 {/* Display lazily loaded image in modal as well */}
                 <div className="mb-10 w-full bg-gray-100 dark:bg-slate-800 rounded-2xl overflow-hidden aspect-video">
                   <img 
-                    src={readingArticle.image || readingArticle.urlToImage || `/api/image?url=${encodeURIComponent(readingArticle.url)}`} 
+                    src={readingArticle.image || readingArticle.urlToImage || getFallbackImage(readingArticle.title, category)} 
                     alt=""
                     className="w-full h-full object-cover"
                     loading="lazy"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800&q=80';
-                    }}
                   />
                 </div>
 

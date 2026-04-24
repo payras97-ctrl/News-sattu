@@ -6,8 +6,7 @@ async function testLocalProxy() {
     const res = await fetch(url);
     const data = await res.json();
     console.log("Status:", res.status);
-    console.log("Articles count:", data.articles?.length);
-    console.log("Error:", data.message);
+    console.log("Art 1:", data.articles[0]);
   } catch (e) {
     console.log("Error:", e.message);
   }
